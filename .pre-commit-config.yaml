@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: ^test/
+      - id: trailing-whitespace
+        exclude: ^test/
+  - repo: https://github.com/zerosnake0/pre-commit-hooks
+    rev: v0.0.3
+    hooks:
+      - id: gofmt
+        exclude: ^pkg/parser/expr\.go
+      - id: goimports
+        exclude: ^pkg/parser/expr\.go
+      #- id: go-vet
+      - id: go-mod-tidy
