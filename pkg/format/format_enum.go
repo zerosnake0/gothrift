@@ -9,16 +9,9 @@ func (f *Formatter) encodeEnum(enum ast.Enum) {
 	f.forward(true, enum.Identifier.Start)
 	f.encodeIdentifier(&enum.Identifier)
 	f.forward(true, enum.LBrace)
-	f.startBrace(enum.LBrace)
-	for i := range enum.List {
-		item := &enum.List[i]
-		if i > 0 {
-			f.print(",")
-		}
-		f.forward(false, item.StartPos())
-		f.encodeEnumDef(item)
-	}
-	f.endBrace(enum.RBrace)
+	f.encodeBrace(enum.LBrace, enum.RBrace, ",", enum.List, func(span ast.Span) {
+		f.encodeEnumDef(span.(*ast.EnumDef))
+	})
 	if enum.Annotations != nil {
 		f.encodeAnnotations(enum.Annotations)
 	}
@@ -29,6 +22,7 @@ func (f *Formatter) encodeEnumDef(item *ast.EnumDef) {
 	if item.Annotations != nil {
 		f.encodeAnnotations(item.Annotations)
 	}
+	f.encodeEndSeparator(item.End)
 }
 
 func (f *Formatter) encodeEnumValue(value ast.EnumValue) {
@@ -38,7 +32,7 @@ func (f *Formatter) encodeEnumValue(value ast.EnumValue) {
 	case ast.Identifier:
 		f.encodeIdentifier(&x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 

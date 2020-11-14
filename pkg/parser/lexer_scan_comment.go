@@ -7,13 +7,15 @@ import (
 )
 
 // the first '//' should already be consumed
-func (lx *exprLexerImpl) scanLineComment() {
+func (lx *exprLexerImpl) scanLineComment(prefix string) {
 	oldCapture := lx.capture
 	lx.capture = true
 
 	begin := lx.head
 
-	var cmt ast.LineComment
+	cmt := ast.LineComment{
+		Prefix: prefix,
+	}
 	cmt.Start = lx.pos(-2)
 	for {
 		i := lx.head

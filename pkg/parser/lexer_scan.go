@@ -79,6 +79,12 @@ func (lx *exprLexerImpl) Lex(lval *exprSymType) int {
 			goto AllowEOF
 		}
 		switch c {
+		case '#':
+			lx.head++
+			lx.scanLineComment("#")
+			if lx.err != nil {
+				goto AllowEOF
+			}
 		case '/':
 			lx.head++
 			if c = lx.nextByte(); lx.err != nil {
@@ -87,7 +93,7 @@ func (lx *exprLexerImpl) Lex(lval *exprSymType) int {
 			switch c {
 			case '/':
 				lx.head++
-				lx.scanLineComment()
+				lx.scanLineComment("//")
 				if lx.err != nil {
 					goto AllowEOF
 				}

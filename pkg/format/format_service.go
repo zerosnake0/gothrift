@@ -13,16 +13,9 @@ func (f *Formatter) encodeService(svc ast.Service) {
 		f.encodeExtends(svc.Extends)
 	}
 	f.forward(true, svc.LBrace)
-	f.startBrace(svc.LBrace)
-	for i := range svc.FunctionList {
-		fc := &svc.FunctionList[i]
-		if i > 0 {
-			f.print(",")
-		}
-		f.forward(false, fc.StartPos())
-		f.encodeFunction(fc)
-	}
-	f.endBrace(svc.RBrace)
+	f.encodeBrace(svc.LBrace, svc.RBrace, "", svc.FunctionList, func(span ast.Span) {
+		f.encodeFunction(span.(*ast.Function))
+	})
 	if svc.Annotations != nil {
 		f.encodeAnnotations(svc.Annotations)
 	}

@@ -11,16 +11,16 @@ func (f *Formatter) encodeHeaders() {
 }
 
 func (f *Formatter) encodeHeader(header ast.Header) {
-	f.forward(false, header.StartPos())
-
-	f.newScope()
+	start := header.StartPos()
+	f.newScope(start)
+	f.forward(false, start)
 	switch x := header.(type) {
 	case ast.Include:
 		f.encodeInclude(x)
 	case ast.Namespace:
 		f.encodeNamespace(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 	f.endScope()
 }

@@ -58,6 +58,7 @@ func (f *Formatter) encodeField(field *ast.Field) {
 	if field.Annotations != nil {
 		f.encodeAnnotations(field.Annotations)
 	}
+	f.encodeEndSeparator(field.End)
 }
 
 func (f *Formatter) encodeFieldIdentifier(fi *ast.FieldIdentifier) {

@@ -16,6 +16,7 @@ type stack struct {
 type formatterEmbedded struct {
 	cmtIdx  int     // current comment index
 	lastEnd ast.Pos // end position of last element
+	col     int     // current output cursor
 }
 
 type Formatter struct {
@@ -32,7 +33,15 @@ type Formatter struct {
 func (f *Formatter) print(format string, args ...interface{}) {
 	f.buf.Reset()
 	fmt.Fprintf(&f.buf, format, args...)
-	if bytes.IndexByte(f.buf.Bytes(), '\n') >= 0 {
+	data := f.buf.Bytes()
+	for {
+		i := bytes.IndexByte(data, '\n')
+		data = data[i+1:]
+		if i < 0 {
+			f.col += len(data)
+			break
+		}
+		f.col = 0
 		f.pushCurrentIndent()
 	}
 	io.Copy(f.Writer, &f.buf)
@@ -44,10 +53,20 @@ func (f *Formatter) printWithIndent(format string, args ...interface{}) {
 }
 
 func (f *Formatter) printIndent() {
+	if f.col != 0 {
+		shouldNotReach()
+	}
 	for _, elem := range f.stack {
 		if elem.indent != 0 {
 			f.Writer.Write([]byte{'\t'})
+			f.col++
 		}
+	}
+}
+
+func (f *Formatter) newLineIfNot() {
+	if f.col != 0 {
+		f.print("\n")
 	}
 }
 
@@ -59,6 +78,8 @@ func (f *Formatter) Encode() {
 	f.sep = defaultSep
 	f.encodeHeaders()
 	f.encodeDefinitions()
+	f.outputComments(nil, nil)
+	f.newLineIfNot()
 }
 
 func (f *Formatter) pushStackStep() {
@@ -76,18 +97,46 @@ func (f *Formatter) pushCurrentIndent() {
 	}
 }
 
-func (f *Formatter) newScope() {
-	if len(f.stack) == 0 {
-		f.print("\n")
-		f.lastEnd.Col = 0 // TODO: is this safe?
-	}
+func (f *Formatter) pushStack() {
 	f.stack = append(f.stack, stack{
 		first: true,
 	})
 }
 
-func (f *Formatter) endScope() {
+func (f *Formatter) popStack() {
 	f.stack = f.stack[:len(f.stack)-1]
+}
+
+func (f *Formatter) endScope() {
+	f.popStack()
+}
+
+func (f *Formatter) outputRemainingComments(next ast.Pos) {
+	if f.lastEnd.Col > 0 {
+		f.pushStack() // treat the following comment as a single scope
+		f.outputComments(&f.lastEnd, &next)
+		f.popStack()
+	}
+}
+
+func (f *Formatter) encodeEndSeparator(sep *ast.Identifier) {
+	if sep != nil {
+		f.outputRemainingComments(sep.Start)
+		f.lastEnd = sep.End
+	}
+}
+
+func (f *Formatter) newScope(next ast.Pos) {
+	// consume all the remaining comments
+	f.outputRemainingComments(next)
+
+	if len(f.stack) == 0 { // if we are at the root level
+		f.outputComments(nil, &next)
+		f.newLineIfNot()
+		f.outputBlankLine(next)
+	}
+	// real new scope here
+	f.pushStack()
 }
 
 func (f *Formatter) outputBlankLine(next ast.Pos) {
@@ -99,14 +148,17 @@ func (f *Formatter) outputBlankLine(next ast.Pos) {
 	if d <= 0 {
 		return // same line, nothing to do
 	}
-	f.print("\n")
+	f.newLineIfNot() // already a new line
+	if d > 1 {
+		f.print("\n")
+	}
 	f.lastEnd = ast.Pos{
 		Line: next.Line,
 	}
 }
 
 func (f *Formatter) outputIndent() {
-	if f.lastEnd.Col == 0 {
+	if f.col == 0 {
 		f.printIndent()
 	} else {
 		f.print(f.sep)
@@ -116,7 +168,7 @@ func (f *Formatter) outputIndent() {
 
 func (f *Formatter) forward(follow bool, next ast.Pos) (count int) {
 	last := f.lastEnd // save the previous token's end position
-	count = f.outputComments(next)
+	count = f.outputComments(nil, &next)
 	// if there is no comment, all is good, otherwise
 	// 1. line comment, the indent will be pushed, no problem
 	// 2. block comment
@@ -127,11 +179,12 @@ func (f *Formatter) forward(follow bool, next ast.Pos) (count int) {
 	//     /* */
 	//     <next>
 	if follow {
-		if f.lastEnd.Line != last.Line { // comment changed line
-			if f.lastEnd.Line == next.Line { // next same line with comment end
-				return
-			}
+		if f.lastEnd.Line == last.Line || // comment didn't change line
+			f.lastEnd.Line == next.Line { // next same line with comment end
+			return
 		}
+		// comment changed line and the next element
+		// is not on the same line as the comment
 	}
 	f.outputBlankLine(next)
 	return

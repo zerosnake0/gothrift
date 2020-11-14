@@ -7,14 +7,28 @@ import (
 	"github.com/zerosnake0/gothrift/pkg/ast"
 )
 
-func (f *Formatter) outputComments(before ast.Pos) int {
+func (f *Formatter) outputComments(prev, before *ast.Pos) int {
+	if prev != nil {
+		prev = prev.Ptr()
+	}
 	count := 0
 	for ; f.cmtIdx < len(f.Doc.Comments); f.cmtIdx++ {
 		cmt := f.Doc.Comments[f.cmtIdx]
-		if !cmt.StartPos().Before(before) {
-			break
+		start := cmt.StartPos()
+		if before != nil {
+			if !start.Before(*before) {
+				break
+			}
+		}
+		if prev != nil {
+			if start.Line > prev.Line {
+				break
+			}
 		}
 		f.outputComment(cmt)
+		if prev != nil {
+			*prev = cmt.EndPos()
+		}
 		count++
 	}
 	return count
@@ -30,7 +44,7 @@ func (f *Formatter) outputComment(cmt ast.Comment) {
 	case ast.BlockComment:
 		f.outputBlockComment(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 
@@ -39,15 +53,12 @@ func (f *Formatter) outputLineComment(cmt ast.LineComment) {
 
 	txt := strings.TrimRightFunc(cmt.Text, unicode.IsSpace)
 	if len(txt) > 0 && txt[0] != ' ' {
-		f.print("// %s\n", txt)
+		f.print("%s %s", cmt.Prefix, txt)
 	} else {
-		f.print("//%s\n", txt)
+		f.print("%s%s", cmt.Prefix, txt)
 	}
 
-	end := cmt.EndPos()
-	f.lastEnd = ast.Pos{
-		Line: end.Line + 1, // new line
-	}
+	f.lastEnd = cmt.End
 }
 
 func (f *Formatter) outputBlockComment(cmt ast.BlockComment) {

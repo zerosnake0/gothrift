@@ -10,12 +10,13 @@ type Comment interface {
 
 type LineComment struct {
 	TextNode
+	Prefix string
 }
 
 var _ Comment = LineComment{}
 
 func (cmt LineComment) Format(f fmt.State, c rune) {
-	fmt.Fprintf(f, "//%s", cmt.Text)
+	fmt.Fprintf(f, "%s%s", cmt.Prefix, cmt.Text)
 }
 
 type BlockComment struct {

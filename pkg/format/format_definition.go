@@ -11,8 +11,9 @@ func (f *Formatter) encodeDefinitions() {
 }
 
 func (f *Formatter) encodeDefinition(def ast.Definition) {
+	start := def.StartPos()
+	f.newScope(start)
 	f.forward(false, def.StartPos())
-	f.newScope()
 	switch x := def.(type) {
 	case ast.Const:
 		f.encodeConst(x)
@@ -29,7 +30,7 @@ func (f *Formatter) encodeDefinition(def ast.Definition) {
 	case ast.Service:
 		f.encodeService(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 	f.endScope()
 }

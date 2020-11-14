@@ -14,6 +14,7 @@ func (f *Formatter) encodeConst(cst ast.Const) {
 	f.encodeKeyword(cst.Eq, "=")
 	f.forward(true, cst.Value.StartPos())
 	f.encodeConstValue(cst.Value)
+	f.encodeEndSeparator(cst.End)
 }
 
 func (f *Formatter) encodeConstValue(value ast.ConstValue) {
@@ -29,45 +30,29 @@ func (f *Formatter) encodeConstValue(value ast.ConstValue) {
 	case ast.ConstMap:
 		f.encodeConstMap(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 
 func (f *Formatter) encodeConstList(lst ast.ConstList) {
-	f.encodeKeyword(lst.Start, "[")
-	f.newScope()
-	for i := range lst.Content {
-		item := &lst.Content[i]
-		if i == 0 {
-			f.forwardAndEmptySep(false, item.StartPos())
-		} else {
-			f.print(",")
-			f.forward(false, item.StartPos())
-		}
-		f.encodeConstListItem(item)
-	}
-	f.forwardAndEmptySep(false, lst.End)
-	f.endScope()
-	f.encodeKeywordEnd(lst.End, "]")
+	end := lst.End
+	end.Col--
+	f.encodeBracket(lst.Start, end, ",", lst.Content, func(span ast.Span) {
+		f.encodeConstListItem(span.(*ast.ConstListItem))
+	})
 }
 
 func (f *Formatter) encodeConstListItem(item *ast.ConstListItem) {
 	f.encodeConstValue(item.ConstValue)
+	f.encodeEndSeparator(item.End)
 }
 
 func (f *Formatter) encodeConstMap(mp ast.ConstMap) {
-	f.startBrace(mp.Start)
-	for i := range mp.Content {
-		item := &mp.Content[i]
-		if i == 0 {
-			f.forwardAndEmptySep(false, item.StartPos())
-		} else {
-			f.print(",")
-			f.forward(false, item.StartPos())
-		}
-		f.encodeConstMapItem(item)
-	}
-	f.endBrace(mp.End)
+	end := mp.EndPos()
+	end.Col--
+	f.encodeBrace(mp.StartPos(), end, ",", mp.Content, func(span ast.Span) {
+		f.encodeConstMapItem(span.(*ast.ConstMapItem))
+	})
 }
 
 func (f *Formatter) encodeConstMapItem(item *ast.ConstMapItem) {
@@ -76,4 +61,5 @@ func (f *Formatter) encodeConstMapItem(item *ast.ConstMapItem) {
 	f.encodeKeyword(item.Colon, ":")
 	f.forward(true, item.Value.StartPos())
 	f.encodeConstValue(item.Value)
+	f.encodeEndSeparator(item.End)
 }

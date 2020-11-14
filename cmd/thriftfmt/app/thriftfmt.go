@@ -8,9 +8,15 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/zerosnake0/gothrift/pkg/format"
 	"github.com/zerosnake0/gothrift/pkg/parser"
+)
+
+var (
+	write bool
+	debug bool
 )
 
 func process(r io.Reader, w io.Writer) error {
@@ -33,9 +39,17 @@ func output(r io.Reader, w io.Writer) {
 			os.Exit(1)
 		}
 	} else {
+		format := "%s\n"
+		if debug {
+			format = "%s|\n"
+		}
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
-			fmt.Fprintf(w, "%s\n", scanner.Text())
+			txt := scanner.Text()
+			if debug {
+				txt = strings.ReplaceAll(txt, "\t", "--->")
+			}
+			fmt.Fprintf(w, format, txt)
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println(err)
@@ -49,11 +63,8 @@ func output(r io.Reader, w io.Writer) {
 }
 
 func Main() {
-	var (
-		write bool
-	)
-
 	flag.BoolVar(&write, "w", false, "write directly to file")
+	flag.BoolVar(&debug, "debug", false, "debug mode")
 	flag.Parse()
 
 	buf := bytes.NewBuffer(nil)
@@ -69,12 +80,12 @@ func Main() {
 			func() {
 				fp, err := os.Open(filename)
 				if err != nil {
-					fmt.Println(err)
+					fmt.Println(filename, err)
 					os.Exit(1)
 				}
 				defer fp.Close()
 				if err := process(fp, buf); err != nil {
-					fmt.Println(err)
+					fmt.Println(filename, err)
 					os.Exit(1)
 				}
 			}()

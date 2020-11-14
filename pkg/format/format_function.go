@@ -21,6 +21,7 @@ func (f *Formatter) encodeFunction(fc *ast.Function) {
 	if fc.Annotations != nil {
 		f.encodeAnnotations(fc.Annotations)
 	}
+	f.encodeEndSeparator(fc.End)
 }
 
 func (f *Formatter) encodeFunctionType(typ ast.FunctionType) {
@@ -30,7 +31,7 @@ func (f *Formatter) encodeFunctionType(typ ast.FunctionType) {
 	case ast.Identifier: // VOID
 		f.encodeIdentifier(&x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 

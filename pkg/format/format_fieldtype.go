@@ -13,7 +13,7 @@ func (f *Formatter) encodeFieldType(typ ast.FieldType) {
 	case ast.ContainerType:
 		f.encodeContainerType(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 
@@ -40,7 +40,7 @@ func (f *Formatter) encodeSimpleContainerType(typ ast.SimpleContainerType) {
 	case ast.ListType:
 		f.encodeListType(x)
 	default:
-		panic("should not reach")
+		shouldNotReach()
 	}
 }
 

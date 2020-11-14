@@ -13,4 +13,5 @@ func (f *Formatter) encodeTypeDef(def ast.TypeDef) {
 	if def.Annotations != nil {
 		f.encodeAnnotations(def.Annotations)
 	}
+	f.encodeEndSeparator(def.End)
 }

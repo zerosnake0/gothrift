@@ -6,6 +6,7 @@ import (
 
 // will forward with true, no need to forward before calling this
 func (f *Formatter) encodeAnnotations(annotations *ast.Annotations) {
+	end := annotations.End
 	if len(annotations.Annotations) == 0 {
 		if f.cmtIdx >= len(f.Doc.Comments) {
 			// no more comment
@@ -18,18 +19,11 @@ func (f *Formatter) encodeAnnotations(annotations *ast.Annotations) {
 		// there is comment between two chevrons
 	}
 	f.forward(true, annotations.Start)
-	f.startChevron(annotations.Start)
-	for i := range annotations.Annotations {
-		anno := &annotations.Annotations[i]
-		if i == 0 {
-			f.forwardAndEmptySep(false, anno.StartPos())
-		} else {
-			f.print(",")
-			f.forward(false, anno.StartPos())
-		}
-		f.encodeAnnotation(anno)
-	}
-	f.endChevron(annotations.End)
+	end.Col--
+	f.encodeChevron(annotations.Start, end, ",", annotations.Annotations,
+		func(span ast.Span) {
+			f.encodeAnnotation(span.(*ast.Annotation))
+		})
 End:
 	f.lastEnd = annotations.End
 }
@@ -38,6 +32,7 @@ func (f *Formatter) encodeAnnotation(anno *ast.Annotation) {
 	f.encodeIdentifier(&anno.Key)
 	f.forward(true, anno.Value.Start)
 	f.encodeAnnotationValue(anno.Value)
+	f.encodeEndSeparator(anno.End)
 }
 
 func (f *Formatter) encodeAnnotationValue(annoValue ast.AnnotationValue) {
