@@ -12,7 +12,7 @@ func (f *Formatter) encodeHeaders() {
 
 func (f *Formatter) encodeHeader(header ast.Header) {
 	start := header.StartPos()
-	f.newScope(start)
+	f.newScope(start, false)
 	f.forward(false, start)
 	switch x := header.(type) {
 	case ast.Include:

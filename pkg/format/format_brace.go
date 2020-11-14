@@ -8,7 +8,7 @@ import (
 
 func (f *Formatter) startBrace(lbrace, next ast.Pos) {
 	f.encodeKeyword(lbrace, "{")
-	f.newScope(next)
+	f.newScope(next, false)
 }
 
 func (f *Formatter) endBrace(rbrace ast.Pos) {
@@ -19,7 +19,7 @@ func (f *Formatter) endBrace(rbrace ast.Pos) {
 
 func (f *Formatter) startChevron(lchevron, next ast.Pos) {
 	f.encodeKeyword(lchevron, "(")
-	f.newScope(next)
+	f.newScope(next, true)
 }
 
 func (f *Formatter) endChevron(rchevron ast.Pos) {
@@ -30,7 +30,7 @@ func (f *Formatter) endChevron(rchevron ast.Pos) {
 
 func (f *Formatter) startBracket(lbracket, next ast.Pos) {
 	f.encodeKeyword(lbracket, "[")
-	f.newScope(next)
+	f.newScope(next, true)
 }
 
 func (f *Formatter) endBracket(rbracket ast.Pos) {
@@ -62,7 +62,17 @@ func (f *Formatter) encodeCouple(opt *coupleOpt, l, r ast.Pos, sep string, array
 				}
 				f.outputRemainingComments(start)
 			}
+			attach := false
 			if i == 0 && opt.attachFirst {
+				attach = true
+				if f.cmtIdx > 0 {
+					cmt := f.Doc.Comments[f.cmtIdx-1]
+					if l.Before(cmt.StartPos()) {
+						attach = false
+					}
+				}
+			}
+			if attach {
 				f.forwardAndEmptySep(false, item.StartPos())
 			} else {
 				f.forward(false, item.StartPos())

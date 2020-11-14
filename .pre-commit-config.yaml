@@ -4,9 +4,9 @@ repos:
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
-        exclude: ^test/
+        exclude: ^test/input
       - id: trailing-whitespace
-        exclude: ^test/
+        exclude: ^test/input
   - repo: https://github.com/zerosnake0/pre-commit-hooks
     rev: v0.0.3
     hooks:

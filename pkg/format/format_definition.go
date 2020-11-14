@@ -12,7 +12,7 @@ func (f *Formatter) encodeDefinitions() {
 
 func (f *Formatter) encodeDefinition(def ast.Definition) {
 	start := def.StartPos()
-	f.newScope(start)
+	f.newScope(start, false)
 	f.forward(false, def.StartPos())
 	switch x := def.(type) {
 	case ast.Const:

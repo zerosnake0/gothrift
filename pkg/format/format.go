@@ -126,9 +126,13 @@ func (f *Formatter) encodeEndSeparator(sep *ast.Identifier) {
 	}
 }
 
-func (f *Formatter) newScope(next ast.Pos) {
+func (f *Formatter) newScope(next ast.Pos, attach bool) {
 	// consume all the remaining comments
+	if attach {
+		f.sep = ""
+	}
 	f.outputRemainingComments(next)
+	f.sep = defaultSep
 
 	if len(f.stack) == 0 { // if we are at the root level
 		f.outputComments(nil, &next)
