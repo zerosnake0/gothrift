@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -33,32 +32,22 @@ func process(r io.Reader, w io.Writer) error {
 }
 
 func output(r io.Reader, w io.Writer) {
-	if false {
-		if _, err := io.Copy(w, r); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	} else {
-		format := "%s\n"
-		if debug {
-			format = "%s|\n"
-		}
+	if debug {
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			txt := scanner.Text()
-			if debug {
-				txt = strings.ReplaceAll(txt, "\t", "--->")
-			}
-			fmt.Fprintf(w, format, txt)
+			txt = strings.ReplaceAll(txt, "\t", "--->")
+			fmt.Fprintf(w, "%s|\n", txt)
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-	}
-	if _, err := w.Write([]byte{'\n'}); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	} else {
+		if _, err := io.Copy(w, r); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -66,6 +55,10 @@ func Main() {
 	flag.BoolVar(&write, "w", false, "write directly to file")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
 	flag.Parse()
+
+	if write {
+		debug = false
+	}
 
 	buf := bytes.NewBuffer(nil)
 	if flag.NArg() == 0 {
@@ -91,15 +84,24 @@ func Main() {
 			}()
 			if write {
 				// output
-				var name string
+				name := filename
+				for {
+					name += "~"
+					if _, err := os.Stat(name); err != nil {
+						if os.IsNotExist(err) {
+							break
+						}
+						fmt.Println(name, err)
+						os.Exit(1)
+					}
+				}
 				func() {
-					fp, err := ioutil.TempFile("", "")
+					fp, err := os.Create(name)
 					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
 					defer fp.Close()
-					name = fp.Name()
 					output(buf, fp)
 				}()
 				if err := os.Rename(name, filename); err != nil {

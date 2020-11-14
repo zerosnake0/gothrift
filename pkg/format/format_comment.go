@@ -53,12 +53,14 @@ func (f *Formatter) outputLineComment(cmt ast.LineComment) {
 
 	txt := strings.TrimRightFunc(cmt.Text, unicode.IsSpace)
 	if len(txt) > 0 && txt[0] != ' ' {
-		f.print("%s %s", cmt.Prefix, txt)
+		f.print("%s %s\n", cmt.Prefix, txt)
 	} else {
-		f.print("%s%s", cmt.Prefix, txt)
+		f.print("%s%s\n", cmt.Prefix, txt)
 	}
 
-	f.lastEnd = cmt.End
+	f.lastEnd = ast.Pos{
+		Line: cmt.End.Line + 1,
+	}
 }
 
 func (f *Formatter) outputBlockComment(cmt ast.BlockComment) {
