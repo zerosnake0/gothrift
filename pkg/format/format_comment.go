@@ -99,8 +99,9 @@ func (f *Formatter) outputBlockComment(cmt ast.BlockComment) {
 			} else { // non empty line
 				i := strings.Index(line, " *")
 				if i >= 0 {
-					f.print(" %s", line[i+2:])
-				} else {
+					line = line[i+2:]
+				}
+				if line != "" {
 					f.print(" %s", line)
 				}
 				if inl < 0 { // last line
