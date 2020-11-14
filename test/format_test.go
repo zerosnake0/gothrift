@@ -19,26 +19,37 @@ const (
 	outputDir = "output"
 )
 
+func proc(must *require.Assertions, input []byte) (output string) {
+	doc, err := parser.Parse(input)
+	must.NoError(err)
+	buf := bytes.NewBuffer(nil)
+	f := format.Formatter{
+		Doc:    doc,
+		Writer: buf,
+	}
+	f.Encode()
+	return buf.String()
+}
+
 func testSingleFile(t *testing.T, relpath string) {
 	t.Run(relpath, func(t *testing.T) {
 		must := require.New(t)
 
-		input, err := ioutil.ReadFile(filepath.Join(inputDir, relpath))
-		must.NoError(err)
-
+		// output file check
 		output, err := ioutil.ReadFile(filepath.Join(outputDir, relpath))
 		must.NoError(err)
 
-		doc, err := parser.Parse(input)
+		formatted := proc(must, output)
+		if !assert.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted) {
+			t.FailNow()
+		}
+
+		// input file check
+		input, err := ioutil.ReadFile(filepath.Join(inputDir, relpath))
 		must.NoError(err)
 
-		buf := bytes.NewBuffer(nil)
-		f := format.Formatter{
-			Doc:    doc,
-			Writer: buf,
-		}
-		f.Encode()
-		assert.Equal(t, string(output), buf.String(), "exp:\n%s\ngot:\n%s", output, buf.Bytes())
+		formatted = proc(must, input)
+		assert.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted)
 	})
 }
 
@@ -55,5 +66,5 @@ func TestFormat(t *testing.T) {
 }
 
 func TestFormatOne(t *testing.T) {
-	testSingleFile(t, "header/namespace/4.thrift")
+	testSingleFile(t, "definition/service/1.thrift")
 }

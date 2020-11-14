@@ -102,7 +102,11 @@ func (f *Formatter) outputBlockComment(cmt ast.BlockComment) {
 					line = line[i+2:]
 				}
 				if line != "" {
-					f.print(" %s", line)
+					if line[0] == ' ' {
+						f.print("%s", line)
+					} else {
+						f.print(" %s", line)
+					}
 				}
 				if inl < 0 { // last line
 					f.print(" */")
