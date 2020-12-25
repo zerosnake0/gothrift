@@ -6,7 +6,7 @@ import (
 	"github.com/zerosnake0/gothrift/pkg/ast"
 )
 
-func (f *Formatter) startBrace(lbrace, next ast.Pos) {
+func (f *Formatter) startBrace(lbrace, next ast.Pos, singleLine bool) {
 	f.encodeKeyword(lbrace, "{")
 	f.newScope(next, false)
 }
@@ -17,9 +17,9 @@ func (f *Formatter) endBrace(rbrace ast.Pos) {
 	f.encodeKeyword(rbrace, "}")
 }
 
-func (f *Formatter) startChevron(lchevron, next ast.Pos) {
+func (f *Formatter) startChevron(lchevron, next ast.Pos, singleLine bool) {
 	f.encodeKeyword(lchevron, "(")
-	f.newScope(next, true)
+	f.newScope(next, singleLine)
 }
 
 func (f *Formatter) endChevron(rchevron ast.Pos) {
@@ -28,9 +28,9 @@ func (f *Formatter) endChevron(rchevron ast.Pos) {
 	f.encodeKeyword(rchevron, ")")
 }
 
-func (f *Formatter) startBracket(lbracket, next ast.Pos) {
+func (f *Formatter) startBracket(lbracket, next ast.Pos, singleLine bool) {
 	f.encodeKeyword(lbracket, "[")
-	f.newScope(next, true)
+	f.newScope(next, singleLine)
 }
 
 func (f *Formatter) endBracket(rbracket ast.Pos) {
@@ -40,7 +40,7 @@ func (f *Formatter) endBracket(rbracket ast.Pos) {
 }
 
 type coupleOpt struct {
-	startFunc   func(left, next ast.Pos)
+	startFunc   func(left, next ast.Pos, singleLine bool)
 	endFunc     func(right ast.Pos)
 	attachFirst bool
 }
@@ -49,10 +49,10 @@ func (f *Formatter) encodeCouple(opt *coupleOpt, l, r ast.Pos, sep string, array
 	v := reflect.ValueOf(array)
 	singleLine := l.Line == r.Line
 	if v.Len() == 0 {
-		opt.startFunc(l, r)
+		opt.startFunc(l, r, singleLine)
 	} else {
 		span := v.Index(0).Addr().Interface().(ast.Span)
-		opt.startFunc(l, span.StartPos())
+		opt.startFunc(l, span.StartPos(), singleLine)
 		for i := 0; i < v.Len(); i++ {
 			item := v.Index(i).Addr().Interface().(ast.Span)
 			start := item.StartPos()
@@ -62,6 +62,7 @@ func (f *Formatter) encodeCouple(opt *coupleOpt, l, r ast.Pos, sep string, array
 				}
 				f.outputRemainingComments(start)
 			}
+
 			attach := false
 			if i == 0 && opt.attachFirst {
 				attach = true
@@ -85,7 +86,7 @@ func (f *Formatter) encodeCouple(opt *coupleOpt, l, r ast.Pos, sep string, array
 	}
 	f.outputRemainingComments(r)
 	if !singleLine {
-		f.print("\n")
+		f.newLineIfNot()
 	}
 	opt.endFunc(r)
 }

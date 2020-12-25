@@ -64,10 +64,13 @@ func (f *Formatter) printIndent() {
 	}
 }
 
-func (f *Formatter) newLineIfNot() {
-	if f.col != 0 {
-		f.print("\n")
+// returns: if a new line is printed
+func (f *Formatter) newLineIfNot() bool {
+	if f.col == 0 {
+		return false
 	}
+	f.print("\n")
+	return true
 }
 
 const defaultSep = " "
@@ -131,16 +134,26 @@ func (f *Formatter) newScope(next ast.Pos, attach bool) {
 	if attach {
 		f.sep = ""
 	}
+	last := f.lastEnd
 	f.outputRemainingComments(next)
 	f.sep = defaultSep
 
-	if len(f.stack) == 0 { // if we are at the root level
+	atRoot := len(f.stack) == 0
+	if atRoot { // if we are at the root level
 		f.outputComments(nil, &next)
 		f.newLineIfNot()
 		f.outputBlankLine(next)
 	}
+
 	// real new scope here
 	f.pushStack()
+	if !atRoot {
+		// we were already at a non root level
+		// we need to indent if line change happened
+		if f.lastEnd.Line != last.Line {
+			f.pushCurrentIndent()
+		}
+	}
 }
 
 func (f *Formatter) outputBlankLine(next ast.Pos) {
@@ -152,9 +165,24 @@ func (f *Formatter) outputBlankLine(next ast.Pos) {
 	if d <= 0 {
 		return // same line, nothing to do
 	}
-	f.newLineIfNot() // already a new line
-	if d > 1 {
+	// case1: f.col == 0, f.lastEnd.col > 0, d == 1 no need to output
+	if f.col == 0 {
+		// we printed a newline already
+		if last.Col == 0 {
+			// there is really a gap to be printed
+			f.print("\n")
+		} else {
+			if d > 1 {
+				f.print("\n")
+			}
+		}
+	} else {
+		// case2: f.col > 0, f.lastEnd.col > 0, d > 1
 		f.print("\n")
+		if d > 1 {
+			// the gap is more than one line
+			f.print("\n")
+		}
 	}
 	f.lastEnd = ast.Pos{
 		Line: next.Line,

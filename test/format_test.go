@@ -35,21 +35,20 @@ func testSingleFile(t *testing.T, relpath string) {
 	t.Run(relpath, func(t *testing.T) {
 		must := require.New(t)
 
-		// output file check
 		output, err := ioutil.ReadFile(filepath.Join(outputDir, relpath))
 		must.NoError(err)
 
-		formatted := proc(must, output)
-		if !assert.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted) {
-			t.FailNow()
-		}
+		t.Run("formatting", func(t *testing.T) {
+			input, err := ioutil.ReadFile(filepath.Join(inputDir, relpath))
+			must.NoError(err)
 
-		// input file check
-		input, err := ioutil.ReadFile(filepath.Join(inputDir, relpath))
-		must.NoError(err)
-
-		formatted = proc(must, input)
-		assert.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted)
+			formatted := proc(must, input)
+			assert.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted)
+		})
+		t.Run("idempotence", func(t *testing.T) {
+			formatted := proc(must, output)
+			require.Equal(t, string(output), formatted, "exp:\n%s\ngot:\n%s", output, formatted)
+		})
 	})
 }
 
@@ -66,5 +65,5 @@ func TestFormat(t *testing.T) {
 }
 
 func TestFormatOne(t *testing.T) {
-	testSingleFile(t, "definition/service/1.thrift")
+	testSingleFile(t, "definition/struct/3.thrift")
 }

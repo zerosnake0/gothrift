@@ -14,9 +14,12 @@ import (
 )
 
 var (
-	write bool
-	debug bool
+	write       bool
+	debug       bool
+	showVersion bool
 )
+
+const versionStr = "0.0.2"
 
 func process(r io.Reader, w io.Writer) error {
 	doc, err := parser.ParseReader(r)
@@ -52,9 +55,15 @@ func output(r io.Reader, w io.Writer) {
 }
 
 func Main() {
+	flag.BoolVar(&showVersion, "V", false, "print version")
 	flag.BoolVar(&write, "w", false, "write directly to file")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
 	flag.Parse()
+
+	if showVersion {
+		fmt.Println(versionStr)
+		return
+	}
 
 	if write {
 		debug = false
